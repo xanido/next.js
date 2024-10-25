@@ -17,6 +17,7 @@ const parseNodeArgs = (args: string[]) => {
   // For the `NODE_OPTIONS`, we support arguments with values without the `=`
   // sign. We need to parse them manually.
   let orphan = null
+  let parsedValues: Record<string, string | boolean | undefined> = {}
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]
 
@@ -29,6 +30,7 @@ const parseNodeArgs = (args: string[]) => {
     // then the option is orphaned, and we can assign it.
     if (token.kind === 'option') {
       orphan = typeof token.value === 'undefined' ? token : null
+      parsedValues[token.rawName] = values[token.name]
       continue
     }
 
@@ -47,13 +49,13 @@ const parseNodeArgs = (args: string[]) => {
     // If the token is a positional one, and it has a value, so add it to the
     // values object. If it already exists, append it with a space.
     if (orphan.name in values && typeof values[orphan.name] === 'string') {
-      values[orphan.name] += ` ${token.value}`
+      parsedValues[orphan.rawName] += ` ${token.value}`
     } else {
-      values[orphan.name] = token.value
+      parsedValues[orphan.rawName] = token.value
     }
   }
 
-  return values
+  return parsedValues
 }
 
 /**
@@ -156,7 +158,7 @@ export const getParsedDebugAddress = (): DebugAddress => {
   // We expect to find the debug port in one of these options. The first one
   // found will be used.
   const address =
-    parsed.inspect ?? parsed['inspect-brk'] ?? parsed['inspect_brk']
+    parsed['--inspect'] ?? parsed['--inspect-brk'] ?? parsed['--inspect_brk']
 
   if (!address || typeof address !== 'string') {
     return { host: undefined, port: 9229 }
@@ -193,11 +195,11 @@ export function formatNodeOptions(
   return Object.entries(args)
     .map(([key, value]) => {
       if (value === true) {
-        return `--${key}`
+        return `${key}`
       }
 
       if (value) {
-        return `--${key}=${
+        return `${key}${key.startsWith('--') ? '=' : ' '}${
           // Values with spaces need to be quoted. We use JSON.stringify to
           // also escape any nested quotes.
           value.includes(' ') && !value.startsWith('"')
@@ -225,9 +227,9 @@ export function getParsedNodeOptionsWithoutInspect() {
   const parsed = parseNodeArgs(args)
 
   // Remove inspect options.
-  delete parsed.inspect
-  delete parsed['inspect-brk']
-  delete parsed['inspect_brk']
+  delete parsed['--inspect']
+  delete parsed['--inspect-brk']
+  delete parsed['--inspect_brk']
 
   return parsed
 }
@@ -272,8 +274,8 @@ export function getNodeDebugType(): NodeInspectType {
 
   const parsed = parseNodeArgs(args)
 
-  if (parsed.inspect) return 'inspect'
-  if (parsed['inspect-brk'] || parsed['inspect_brk']) return 'inspect-brk'
+  if (parsed['--inspect']) return 'inspect'
+  if (parsed['--inspect-brk'] || parsed['--inspect_brk']) return 'inspect-brk'
 }
 
 /**
@@ -288,7 +290,7 @@ export function getMaxOldSpaceSize() {
 
   const parsed = parseNodeArgs(args)
 
-  const size = parsed['max-old-space-size'] || parsed['max_old_space_size']
+  const size = parsed['--max-old-space-size'] || parsed['--max_old_space_size']
   if (!size || typeof size !== 'string') return
 
   return parseInt(size, 10)

@@ -42,13 +42,14 @@ describe('tokenizeArgs', () => {
 describe('formatNodeOptions', () => {
   it('wraps values with spaces in quotes', () => {
     const result = formatNodeOptions({
-      spaces: 'thing with spaces',
-      spacesAndQuotes: 'thing with "spaces"',
-      normal: '1234',
+      '--spaces': 'thing with spaces',
+      '--spacesAndQuotes': 'thing with "spaces"',
+      '--normal': '1234',
+      '-r': 'module',
     })
 
     expect(result).toBe(
-      '--spaces="thing with spaces" --spacesAndQuotes="thing with \\"spaces\\"" --normal=1234'
+      '--spaces="thing with spaces" --spacesAndQuotes="thing with \\"spaces\\"" --normal=1234 -r module'
     )
   })
 })
@@ -99,6 +100,16 @@ describe('getFormattedNodeOptionsWithoutInspect', () => {
 
     expect(result).toBe(
       '--require="./file with spaces to-require-with-node-require-option.js"'
+    )
+  })
+
+  it('handles shorthand options', () => {
+    process.env.NODE_OPTIONS =
+      '-r "./file with spaces to-require-with-node-require-option.js"'
+    const result = getFormattedNodeOptionsWithoutInspect()
+
+    expect(result).toBe(
+      '-r "./file with spaces to-require-with-node-require-option.js"'
     )
   })
 

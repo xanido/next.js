@@ -50,8 +50,8 @@ export class Worker {
       // Get the node options without inspect and also remove the
       // --max-old-space-size flag as it can cause memory issues.
       const nodeOptions = getParsedNodeOptionsWithoutInspect()
-      delete nodeOptions['max-old-space-size']
-      delete nodeOptions['max_old_space_size']
+      delete nodeOptions['--max-old-space-size']
+      delete nodeOptions['--max_old_space_size']
 
       this._worker = new JestWorker(workerPath, {
         ...farmOptions,
